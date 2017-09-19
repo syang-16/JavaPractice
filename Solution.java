@@ -1,4 +1,4 @@
-package io.interview.practice;
+package io.practice;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
@@ -32,6 +32,7 @@ public class Solution{
 		System.out.println("If there are space, please enclose with ");
 	}
 }
+
 class RenameFolder{//Contains all methods in one class
 	String args[];
 	public RenameFolder(String args[]){
@@ -50,88 +51,88 @@ class RenameFolder{//Contains all methods in one class
 	public boolean validateFile(String args[])throws Exception{//validate files
 		if(this.validateInput(args)){
 			//form new directory
-			String originalfolder = args[0];//read input from user
-			String newfolder = args[1];
-			
-			File ofs = new File(originalfolder); //old file directory
-			if(!ofs.exists()){
-				System.out.println("folder doesnot exist");
-				return false;
+			String oldfolder = args[0];//read input from user
+			File of = new File(oldfolder); //old folder directory
+			String newfolder = of.getParent()+args[1]; //new foler directory
+			if(!of.exists()){
+				throw new IllegalFileException("Old folder doesnot exist");
 			}
-			if(!ofs.isDirectory()){
-				System.out.println("pls input directory,not file");
-				return false;
+			if(!of.isDirectory()){
+				throw new IllegalFileException("Please input folder name,not file");
 			}
-			File nfs = new File(newfolder);//new file directory
-			if(nfs.exists()){
-				System.out.println("the new file already exists");
-				return false;
+			File nf = new File(newfolder);//new file directory
+			if(nf.exists()){
+				throw new IllegalFileException("The new folder already exists");
+			}
+			if(oldfolder==newfolder){
+				throw new IllegalFileException("The old folder is the same as the new folder");
 			}
 		}
 		return true;
-			
-/*			try{
-				
-			}catch(){
-				
-			}finally{
-				
-			}*/
-
-		
-	}
-	public boolean changeName(String args[]){//change file name
-		String originalfolder = args[0];//read input from user
+}
+	public boolean changeName(String args[])throws Exception{//change file name
+		String oldfolder = args[0];//read input from user
 		String newfolder = args[1];
-		File ofs = new File(originalfolder);
-		if(ofs.getParentFile().exists()){
-			newfolder = ofs.getParent() + File.separator + newfolder;
-			File nfs = new File(newfolder);
-//			ofs.renameTo(nfs);
-			return true;
-		}else{
-			return false;
+		File of = new File(oldfolder);
+		newfolder = of.getParent() + File.separator + newfolder;
+		File nf = new File(newfolder);
+		if(!of.renameTo(nf)){
+			throw new IllegalFileException("Renaming is not successful");
 		}
+		return true;
 
 	}
-	public boolean changeEnv(String args[]){//change environmental variable
+	public boolean changeEnv(String args[]) throws Exception{//change environmental variable
+			//Prepare output .bat file
 			File batfile = new File("c:" + File.separator + "interview" + File.separator + "result.bat" );
 			if(!batfile.getParentFile().exists()){
 				batfile.getParentFile().mkdir();
 			}
+			PrintStream ps = new PrintStream(batfile);//stream for bat file
+			
+			//Form full new folder directory
 			File of = new File(args[0]);
 			String oldfolder = args[0];
 			String newfolder = of.getParent()+args[1];
-			try{
-				PrintStream ps = new PrintStream(batfile);
-				Map<String,String> env = System.getenv();
-				for(String vaname : env.keySet()){//visit each key-value
-					if(env.get(vaname).contains(oldfolder)){//find value with target
-						boolean flag = false; //indicate replacement
-						System.out.format("%s=%s%n",vaname,env.get(vaname));
-						String[] dirs = env.get(vaname).split(";");//split value with ";"
-						StringBuilder newdirs = new StringBuilder();
-						for(String dir:dirs){//visit each directory
-							if(dir.equals(oldfolder)||(dir.startsWith(oldfolder+File.separator))){
-								newdirs.append(dir.replace(oldfolder,newfolder)+";");
-								flag = true;
-							}else{
-								newdirs.append(dir+";");
-							}
-						}
-						if(flag){
-							ps.println("SET " + vaname + "=" + newdirs);
-							System.out.format("%s=%s%n",vaname,env.get(vaname));
-							System.out.println(newdirs);
-						}
-//						System.out.println(newdirs);
-					}
-				}
-				ps.close();
-			}catch(FileNotFoundException e){
-				System.exit(2);
-			}
 
+			//read environmental variables
+			Map<String,String> env = System.getenv();
+			for(String vaname : env.keySet()){//visit each key-value
+				//check possible value with old folder
+				if(env.get(vaname).contains(oldfolder)){
+					boolean flag = false; //if replacement really occurred
+
+					//split value into String array.
+					String[] dirs = env.get(vaname).split(";");
+//					if(oldfolder.indexOf(";")!=-1){//split in Windows
+//						dirs = env.get(vaname).split(";");//split value with ";"
+//					}else{//split in Linux
+//						dirs = env.get(vaname).split(":");//split value with ":"
+//					}
+					
+					// Scan all directory, finish replacement
+					StringBuilder newdirs = new StringBuilder();
+					for(String dir:dirs){//visit each directory
+						// Two cases: 1. same folder 2. sub folder
+						if(dir.equals(oldfolder)||(dir.startsWith(oldfolder+File.separator))){
+							newdirs.append(dir.replace(oldfolder,newfolder)+";");
+							flag = true;
+						}else{
+							newdirs.append(dir+";");
+						}
+					}
+					
+					//If replacement occurred, write to bat file
+					if(flag){
+						ps.println("SET " + vaname + "=" + newdirs);
+						System.out.format("%s = %s%n",vaname,env.get(vaname));
+						System.out.println(newdirs);
+					}
+//						System.out.println(newdirs);
+//					System.out.format("%s = %s%n",vaname,env.get(vaname));
+				}
+			}
+			ps.close();
 			return true;
 	}
 
@@ -143,6 +144,14 @@ class RenameFolder{//Contains all methods in one class
 			super(msg);
 		}
 		
+	}
+	public static class IllegalFileException extends Exception{
+		public IllegalFileException(){
+			super();
+		}
+		public IllegalFileException(String msg){
+			super(msg);
+		}
 	}
 }
 
