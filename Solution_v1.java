@@ -35,8 +35,8 @@ public class Solution_v1{
 			return 0;
 		}
 	public static void printUsage(){
-		System.out.println("Please input origini dir and new folder");
-		System.out.println("If there are space, please enclose with ");
+		System.out.println("Please input original directory and new folder.");
+		System.out.println("If there are space in path names, please enclose with \"\". ");
 	}
 }
 
@@ -114,7 +114,7 @@ class RenameFolder{//Contains all methods in one class
 					// Scan all directory, finish replacement
 					StringBuilder newdirs = new StringBuilder();
 					for(String dir:dirs){//visit each directory
-						// Two cases: 1. same folder 2. sub folder
+						// Path.startsWith to handle two cases: 1. same folder 2. sub folder
 						Path dirpath = Paths.get(dir);
 						if(dirpath.startsWith(rp.oldpathstr)){
 							newdirs.append(dir.replace(rp.oldpathstr,rp.newpathstr)+";");
